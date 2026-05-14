@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Bimatrix Solver — Главная{% endblock %}
+{% block content %}
+<h1>Биматричная игра: поиск равновесий Нэша</h1>
+
+<div class="tab-container">
+    <button class="tab-button active" onclick="switchTab('manual')">Ввод вручную</button>
+    <button class="tab-button" onclick="switchTab('file')">Загрузка из файла</button>
+</div>
+
+<!-- Вкладка: ввод вручную -->
+<div id="tab-manual" class="tab-content" style="display: block;">
+    <form action="/solve" method="post" onsubmit="return submitMainForm()">
+        <div class="matrix-input">
+            <div class="matrix-group">
+                <h3>Матрица A (игрок 1)</h3>
+                <div class="matrix-controls">
+                    <label>Строк: <input type="number" id="rowsA" value="2" min="1" max="20" onchange="buildMainGrid()"></label>
+                    <label>Столбцов: <input type="number" id="colsA" value="2" min="1" max="20" onchange="buildMainGrid()"></label>
+                </div>
+                <div id="gridA" class="matrix-grid"></div>
+                <input type="hidden" name="matrix_a" id="matrix_a">
+            </div>
+            <div class="matrix-group">
+                <h3>Матрица B (игрок 2)</h3>
+                <div class="matrix-controls">
+                    <label>Строк: <input type="number" id="rowsB" value="2" min="1" max="20" onchange="buildMainGrid()"></label>
+                    <label>Столбцов: <input type="number" id="colsB" value="2" min="1" max="20" onchange="buildMainGrid()"></label>
+                </div>
+                <div id="gridB" class="matrix-grid"></div>
+                <input type="hidden" name="matrix_b" id="matrix_b">
+            </div>
+        </div>
+        <br>
+        <label>Алгоритм:</label>
+        <select name="method">
+            <option value="lemke_howson">Лемке–Хаусон (Nashpy)</option>
+            <option value="support_enumeration">Перебор опор (Nashpy)</option>
+            <option value="lemke_howson_manual">Лемке–Хаусон (ручная реализация)</option>
+        </select>
+        <br><br>
+        <button type="submit">Решить</button>
+    </form>
+</div>
+
+<!-- Вкладка: загрузка из файла -->
+<div id="tab-file" class="tab-content" style="display: none;">
+    <form action="/solve" method="post" enctype="multipart/form-data">
+        <p>Загрузите JSON-файл с матрицами A и B:</p>
+        <input type="file" name="matrix_file" accept=".json" required><br><br>
+        <label>Алгоритм:</label>
+        <select name="method">
+            <option value="lemke_howson">Лемке–Хаусон (Nashpy)</option>
+            <option value="support_enumeration">Перебор опор (Nashpy)</option>
+            <option value="lemke_howson_manual">Лемке–Хаусон (ручная реализация)</option>
+        </select>
+        <br><br>
+        <button type="submit">Решить</button>
+    </form>
+</div>
+
+<hr>
+<p class="note">* Ручная реализация Лемке–Хаусона по учебнику Колобашкиной находится в разработке.</p>
+{% endblock %}

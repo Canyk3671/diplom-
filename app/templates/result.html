@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Результат решения{% endblock %}
+{% block content %}
+<h1>Результат решения</h1>
+
+<p><strong>Метод:</strong> 
+{% if method == "lemke_howson" %}
+    Лемке–Хаусон (Nashpy)
+{% elif method == "support_enumeration" %}
+    Перебор опор (Nashpy)
+{% elif method == "lemke_howson_manual" %}
+    Лемке–Хаусон (ручная реализация)
+{% else %}
+    {{ method }}
+{% endif %}
+</p>
+
+{% if result.success %}
+    <h2>Найденное равновесие</h2>
+    {% if result.equilibrium %}
+        <p><strong>Стратегия игрока 1:</strong> {{ result.equilibrium.row_strategy }}</p>
+        <p><strong>Стратегия игрока 2:</strong> {{ result.equilibrium.col_strategy }}</p>
+    {% elif result.equilibria %}
+        {% for eq in result.equilibria %}
+            <p><strong>Стратегия игрока 1:</strong> {{ eq.row_strategy }}</p>
+            <p><strong>Стратегия игрока 2:</strong> {{ eq.col_strategy }}</p>
+            {% if not loop.last %}<hr>{% endif %}
+        {% endfor %}
+    {% endif %}
+    <p><em>Время: {{ "%.4f" % result.time_sec }} сек.</em></p>
+{% else %}
+    <p style="color:red;">Ошибка: {{ result.error }}</p>
+{% endif %}
+
+<a href="/">← Назад</a>
+{% endblock %}

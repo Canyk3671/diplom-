@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Сравнение алгоритмов{% endblock %}
+{% block content %}
+<h1>Сравнение методов</h1>
+
+<div class="tab-container">
+    <button class="tab-button active" onclick="switchTab('manual')">Ввод вручную</button>
+    <button class="tab-button" onclick="switchTab('file')">Загрузка из файла</button>
+</div>
+
+<!-- Вкладка: ввод вручную -->
+<div id="tab-manual" class="tab-content" style="display: block;">
+    <form action="/compare" method="post" onsubmit="return submitCompareForm()">
+        <div class="matrix-input">
+            <div class="matrix-group">
+                <h3>Матрица A (игрок 1)</h3>
+                <div class="matrix-controls">
+                    <label>Строк: <input type="number" id="comp_rowsA" value="{{ rows_a }}" min="1" max="20" onchange="buildCompareGrid()"></label>
+                    <label>Столбцов: <input type="number" id="comp_colsA" value="{{ cols_a }}" min="1" max="20" onchange="buildCompareGrid()"></label>
+                </div>
+                <div id="comp_gridA" class="matrix-grid"></div>
+                <input type="hidden" name="matrix_a" id="comp_matrix_a" value="{{ matrix_a_json }}">
+            </div>
+            <div class="matrix-group">
+                <h3>Матрица B (игрок 2)</h3>
+                <div class="matrix-controls">
+                    <label>Строк: <input type="number" id="comp_rowsB" value="{{ rows_b }}" min="1" max="20" onchange="buildCompareGrid()"></label>
+                    <label>Столбцов: <input type="number" id="comp_colsB" value="{{ cols_b }}" min="1" max="20" onchange="buildCompareGrid()"></label>
+                </div>
+                <div id="comp_gridB" class="matrix-grid"></div>
+                <input type="hidden" name="matrix_b" id="comp_matrix_b" value="{{ matrix_b_json }}">
+            </div>
+        </div>
+        <br>
+        <button type="submit">Сравнить</button>
+    </form>
+</div>
+
+<!-- Вкладка: загрузка из файла -->
+<div id="tab-file" class="tab-content" style="display: none;">
+    <form action="/compare" method="post" enctype="multipart/form-data">
+        <p>Загрузите JSON-файл с матрицами A и B:</p>
+        <input type="file" name="matrix_file" accept=".json" required><br><br>
+        <button type="submit">Сравнить</button>
+    </form>
+</div>
+
+{% if lh_result %}
+<hr>
+<h2>Результаты сравнения</h2>
+
+<h3>Lemke-Howson (одна метка)</h3>
+{% if lh_result.success %}
+    <p>Равновесие: row={{ lh_result.equilibrium.row_strategy }}, col={{ lh_result.equilibrium.col_strategy }}</p>
+    <p>Время: {{ "%.6f" % lh_result.time_sec }} сек.</p>
+{% else %}
+    <p class="error">Ошибка: {{ lh_result.error }}</p>
+{% endif %}
+
+<h3>Перебор опор</h3>
+{% if se_result.success %}
+    <p>Количество равновесий: {{ se_result.count }}</p>
+    {% for eq in se_result.equilibria %}
+        <p>{{ eq.row_strategy }} / {{ eq.col_strategy }}</p>
+    {% endfor %}
+    <p>Время: {{ "%.6f" % se_result.time_sec }} сек.</p>
+{% else %}
+    <p class="error">Ошибка: {{ se_result.error }}</p>
+{% endif %}
+
+<h3>Lemke-Howson (все метки)</h3>
+{% if lh_all_result.success %}
+    <p>Найдено уникальных равновесий: {{ lh_all_result.count }}</p>
+    {% for eq in lh_all_result.equilibria %}
+        <p>{{ eq.row_strategy }} / {{ eq.col_strategy }}</p>
+    {% endfor %}
+    <p>Время: {{ "%.6f" % lh_all_result.time_sec }} сек.</p>
+{% else %}
+    <p class="error">Ошибка: {{ lh_all_result.error }}</p>
+{% endif %}
+{% endif %}
+{% endblock %}

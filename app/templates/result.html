@@ -1,13 +1,16 @@
+<!-- app/templates/result.html -->
 {% extends "base.html" %}
 {% block title %}Результат решения{% endblock %}
 {% block content %}
 <h1>Результат решения</h1>
 
-<p><strong>Метод:</strong> 
+<p><strong>Метод:</strong>
 {% if method == "lemke_howson" %}
     Лемке–Хаусон (Nashpy)
 {% elif method == "support_enumeration" %}
     Перебор опор (Nashpy)
+{% elif method == "graphic_2x2" %}
+    Графический метод (2×2)
 {% elif method == "lemke_howson_manual" %}
     Лемке–Хаусон (ручная реализация)
 {% else %}
@@ -16,20 +19,73 @@
 </p>
 
 {% if result.success %}
-    <h2>Найденное равновесие</h2>
+    {% if result.saddle_point %}
+        {% if result.saddle_point.has_saddle_point %}
+            <h2>Седловая точка (решение в чистых стратегиях)</h2>
+            {% if result.saddle_point.count > 1 %}
+                <p>Найдено {{ result.saddle_point.count }} седловых точек:</p>
+            {% endif %}
+            {% for sp in result.saddle_point.saddle_points %}
+                <p>Строка {{ sp.row + 1 }}, Столбец {{ sp.col + 1 }} |
+                   Выигрыш игрока 1: {{ sp.payoff_A }}, Выигрыш игрока 2: {{ sp.payoff_B }}</p>
+            {% endfor %}
+        {% else %}
+            <h2>Седловая точка</h2>
+            <p>Седловых точек не найдено. Равновесие в чистых стратегиях отсутствует.</p>
+        {% endif %}
+    {% endif %}
+
+    {% if result.pure_equilibria %}
+        <h2>Чистые равновесия</h2>
+        {% for eq in result.pure_equilibria %}
+            <p>Стратегия ({{ eq.row + 1 }}, {{ eq.col + 1 }}):
+               выигрыш A = {{ eq.payoff_A }}, B = {{ eq.payoff_B }}</p>
+        {% endfor %}
+    {% endif %}
+
+    {% if result.mixed_equilibria %}
+        <h2>Смешанные равновесия</h2>
+        {% for eq in result.mixed_equilibria %}
+            <p>p* = ({{ eq.p_frac }}; {{ "%.3f" % (1 - eq.p) }}),
+               q* = ({{ eq.q_frac }}; {{ "%.3f" % (1 - eq.q) }})</p>
+            <p>Выигрыш A = {{ "%.4f" % eq.payoff_A }},
+               B = {{ "%.4f" % eq.payoff_B }}</p>
+        {% endfor %}
+    {% endif %}
+
     {% if result.equilibrium %}
+        <h2>Найденное равновесие</h2>
         <p><strong>Стратегия игрока 1:</strong> {{ result.equilibrium.row_strategy }}</p>
         <p><strong>Стратегия игрока 2:</strong> {{ result.equilibrium.col_strategy }}</p>
-    {% elif result.equilibria %}
+    {% endif %}
+
+    {% if result.equilibria %}
+        <h2>Найденные равновесия</h2>
         {% for eq in result.equilibria %}
             <p><strong>Стратегия игрока 1:</strong> {{ eq.row_strategy }}</p>
             <p><strong>Стратегия игрока 2:</strong> {{ eq.col_strategy }}</p>
             {% if not loop.last %}<hr>{% endif %}
         {% endfor %}
     {% endif %}
-    <p><em>Время: {{ "%.4f" % result.time_sec }} сек.</em></p>
+
+    {% if result.plot %}
+        <h2>График</h2>
+        <img src="data:image/png;base64,{{ result.plot }}" alt="График лучших ответов" style="max-width:100%;">
+    {% endif %}
+
+    <p><em>Время: {{ "%.6f" % result.time_sec }} сек.</em></p>
 {% else %}
-    <p style="color:red;">Ошибка: {{ result.error }}</p>
+    <p class="error">Ошибка: {{ result.error }}</p>
+{% endif %}
+
+{% if result.game_properties %}
+<h2>Свойства игры</h2>
+<table>
+    <tr><td>Размерность:</td><td>{{ result.game_properties.shape[0] }} × {{ result.game_properties.shape[1] }}</td></tr>
+    <tr><td>Нулевая сумма:</td><td>{{ "Да" if result.game_properties.is_zero_sum else "Нет" }}</td></tr>
+    <tr><td>Симметричная:</td><td>{{ "Да" if result.game_properties.is_symmetric else "Нет" }}</td></tr>
+    <tr><td>Невырожденная:</td><td>{{ "Да" if result.game_properties.is_nondegenerate else "Нет" }}</td></tr>
+</table>
 {% endif %}
 
 <a href="/">← Назад</a>

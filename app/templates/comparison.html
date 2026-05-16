@@ -1,3 +1,4 @@
+<!-- app/templates/comparison.html -->
 {% extends "base.html" %}
 {% block title %}Сравнение алгоритмов{% endblock %}
 {% block content %}
@@ -8,7 +9,6 @@
     <button class="tab-button" onclick="switchTab('file')">Загрузка из файла</button>
 </div>
 
-<!-- Вкладка: ввод вручную -->
 <div id="tab-manual" class="tab-content" style="display: block;">
     <form action="/compare" method="post" onsubmit="return submitCompareForm()">
         <div class="matrix-input">
@@ -36,7 +36,6 @@
     </form>
 </div>
 
-<!-- Вкладка: загрузка из файла -->
 <div id="tab-file" class="tab-content" style="display: none;">
     <form action="/compare" method="post" enctype="multipart/form-data">
         <p>Загрузите JSON-файл с матрицами A и B:</p>

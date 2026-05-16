@@ -1,3 +1,4 @@
+<!-- app/templates/index.html -->
 {% extends "base.html" %}
 {% block title %}Bimatrix Solver — Главная{% endblock %}
 {% block content %}
@@ -8,7 +9,6 @@
     <button class="tab-button" onclick="switchTab('file')">Загрузка из файла</button>
 </div>
 
-<!-- Вкладка: ввод вручную -->
 <div id="tab-manual" class="tab-content" style="display: block;">
     <form action="/solve" method="post" onsubmit="return submitMainForm()">
         <div class="matrix-input">
@@ -36,6 +36,7 @@
         <select name="method">
             <option value="lemke_howson">Лемке–Хаусон (Nashpy)</option>
             <option value="support_enumeration">Перебор опор (Nashpy)</option>
+            <option value="graphic_2x2">Графический метод (2×2)</option>
             <option value="lemke_howson_manual">Лемке–Хаусон (ручная реализация)</option>
         </select>
         <br><br>
@@ -43,7 +44,6 @@
     </form>
 </div>
 
-<!-- Вкладка: загрузка из файла -->
 <div id="tab-file" class="tab-content" style="display: none;">
     <form action="/solve" method="post" enctype="multipart/form-data">
         <p>Загрузите JSON-файл с матрицами A и B:</p>
@@ -52,6 +52,7 @@
         <select name="method">
             <option value="lemke_howson">Лемке–Хаусон (Nashpy)</option>
             <option value="support_enumeration">Перебор опор (Nashpy)</option>
+            <option value="graphic_2x2">Графический метод (2×2)</option>
             <option value="lemke_howson_manual">Лемке–Хаусон (ручная реализация)</option>
         </select>
         <br><br>

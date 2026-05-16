@@ -1,0 +1,13 @@
+# Кэш Python
+__pycache__/
+*.pyc
+
+# Виртуальное окружение
+.venv312/
+
+# Системные файлы
+.DS_Store
+
+# IDE
+.idea/
+.vscode/

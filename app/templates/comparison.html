@@ -1,239 +1,232 @@
 {% extends "base.html" %}
-{% block title %}Сравнение алгоритмов{% endblock %}
+{% block title %}Сравнение методов{% endblock %}
 
 {% block content %}
-<h1>Сравнение методов</h1>
 
+{# ── Макрос: строка стратегии с дробями ──────────────────────────────────── #}
+{% macro strat(eq, player) %}
+{% if player == 'row' %}
+  {% if eq.row_strategy_frac is defined %}({{ eq.row_strategy_frac | join(", ") }})
+  {% else %}({{ eq.row_strategy | map('float') | map('round', 4) | join(", ") }}){% endif %}
+{% else %}
+  {% if eq.col_strategy_frac is defined %}({{ eq.col_strategy_frac | join(", ") }})
+  {% else %}({{ eq.col_strategy | map('float') | map('round', 4) | join(", ") }}){% endif %}
+{% endif %}
+{% endmacro %}
+
+<h1>Сравнение методов нахождения равновесий Нэша</h1>
+
+{# ── Форма ────────────────────────────────────────────────────────────────── #}
 <div class="tab-container">
-    <button class="tab-button active" onclick="switchTab('manual')">Ввод вручную</button>
-    <button class="tab-button" onclick="switchTab('file')">Загрузка из файла</button>
+  <button class="tab-button active" onclick="switchTab('manual')">Ввод вручную</button>
+  <button class="tab-button" onclick="switchTab('file')">Из файла (JSON)</button>
 </div>
 
-<div id="tab-manual" class="tab-content" style="display: block;">
-    <form action="/compare" method="post" onsubmit="return submitCompareForm()">
-        <div class="matrix-input">
-            <div class="matrix-group">
-                <h3>Матрица A (игрок 1)</h3>
-                <div class="matrix-controls">
-                    <label>Строк: <input type="number" id="comp_rowsA" value="{{ rows_a }}" min="1" max="20" onchange="buildCompareGrid()"></label>
-                    <label>Столбцов: <input type="number" id="comp_colsA" value="{{ cols_a }}" min="1" max="20" onchange="buildCompareGrid()"></label>
-                </div>
-                <div class="matrix-scroll-wrapper">
-                    <div id="comp_gridA" class="matrix-grid"></div>
-                </div>
-                <input type="hidden" name="matrix_a" id="comp_matrix_a" value="{{ matrix_a_json }}">
-            </div>
-            <div class="matrix-group">
-                <h3>Матрица B (игрок 2)</h3>
-                <div class="matrix-controls">
-                    <label>Строк: <input type="number" id="comp_rowsB" value="{{ rows_b }}" min="1" max="20" onchange="buildCompareGrid()"></label>
-                    <label>Столбцов: <input type="number" id="comp_colsB" value="{{ cols_b }}" min="1" max="20" onchange="buildCompareGrid()"></label>
-                </div>
-                <div class="matrix-scroll-wrapper">
-                    <div id="comp_gridB" class="matrix-grid"></div>
-                </div>
-                <input type="hidden" name="matrix_b" id="comp_matrix_b" value="{{ matrix_b_json }}">
-            </div>
+<div id="tab-manual" class="tab-content" style="display:block;">
+  <form action="/compare" method="post" onsubmit="return submitCompareForm()">
+    <div class="matrix-input">
+      <div class="matrix-group">
+        <h3>Матрица A (игрок 1)</h3>
+        <div class="matrix-controls">
+          <label>Строк: <input type="number" id="comp_rowsA" value="{{ rows_a }}" min="1" max="20" onchange="buildCompareGrid()"></label>
+          <label>Столбцов: <input type="number" id="comp_colsA" value="{{ cols_a }}" min="1" max="20" onchange="buildCompareGrid()"></label>
         </div>
-        <br>
-        <button type="submit">Сравнить</button>
-    </form>
+        <div class="matrix-scroll-wrapper"><div id="comp_gridA" class="matrix-grid"></div></div>
+        <input type="hidden" name="matrix_a" id="comp_matrix_a" value="{{ matrix_a_json }}">
+      </div>
+      <div class="matrix-group">
+        <h3>Матрица B (игрок 2)</h3>
+        <div class="matrix-controls">
+          <label>Строк: <input type="number" id="comp_rowsB" value="{{ rows_b }}" min="1" max="20" onchange="buildCompareGrid()"></label>
+          <label>Столбцов: <input type="number" id="comp_colsB" value="{{ cols_b }}" min="1" max="20" onchange="buildCompareGrid()"></label>
+        </div>
+        <div class="matrix-scroll-wrapper"><div id="comp_gridB" class="matrix-grid"></div></div>
+        <input type="hidden" name="matrix_b" id="comp_matrix_b" value="{{ matrix_b_json }}">
+      </div>
+    </div>
+    <br>
+    <button type="submit">Сравнить</button>
+  </form>
 </div>
 
-<div id="tab-file" class="tab-content" style="display: none;">
-    <form action="/compare" method="post" enctype="multipart/form-data">
-        <p>Загрузите JSON-файл с матрицами A и B:</p>
-        <input type="file" name="matrix_file" accept=".json" required><br><br>
-        <button type="submit">Сравнить</button>
-    </form>
+<div id="tab-file" class="tab-content" style="display:none;">
+  <form action="/compare" method="post" enctype="multipart/form-data">
+    <p>Загрузите JSON-файл с полями <code>"A"</code> и <code>"B"</code>:</p>
+    <input type="file" name="matrix_file" accept=".json" required><br><br>
+    <button type="submit">Сравнить</button>
+  </form>
 </div>
 
-{# ─── Результаты ──────────────────────────────────────────────────────────── #}
+{# ════════════════════════════ РЕЗУЛЬТАТЫ ════════════════════════════════════ #}
 {% if lh_result %}
-<hr>
+<hr style="margin:28px 0">
 
-{# Свойства игры #}
+{# Свойства #}
 {% if lh_result.game_properties %}
 <div class="props-block">
-    <strong>Свойства игры:</strong>
-    {{ lh_result.game_properties.shape[0] }}×{{ lh_result.game_properties.shape[1] }} &nbsp;|&nbsp;
-    Нулевая сумма: {{ "Да" if lh_result.game_properties.is_zero_sum else "Нет" }} &nbsp;|&nbsp;
-    Симметричная: {{ "Да" if lh_result.game_properties.is_symmetric else "Нет" }} &nbsp;|&nbsp;
-    Невырожденная: {{ "Да" if lh_result.game_properties.is_nondegenerate else "Нет" }}
+  <strong>Свойства игры:</strong>
+  {{ lh_result.game_properties.shape[0] }}×{{ lh_result.game_properties.shape[1] }}
+  &nbsp;|&nbsp; Нулевая сумма: {{ "Да" if lh_result.game_properties.is_zero_sum else "Нет" }}
+  &nbsp;|&nbsp; Симметричная: {{ "Да" if lh_result.game_properties.is_symmetric else "Нет" }}
+  &nbsp;|&nbsp; Невырожденная: {{ "Да" if lh_result.game_properties.is_nondegenerate else "Нет" }}
 </div>
 {% endif %}
 
 {# Седловая точка #}
 {% if lh_result.saddle_point and lh_result.saddle_point.has_saddle_point %}
 <div class="saddle-block">
-    <strong>Седловая точка:</strong>
-    {% for sp in lh_result.saddle_point.saddle_points %}
-        ({{ sp.row + 1 }}, {{ sp.col + 1 }}) — Выигрыш A={{ sp.payoff_A }}, B={{ sp.payoff_B }}
-    {% endfor %}
+  <strong>⚑ Седловая точка:</strong>
+  {% for sp in lh_result.saddle_point.saddle_points %}
+  ({{ sp.row+1 }}, {{ sp.col+1 }}) — H<sub>A</sub> = {{ sp.payoff_A }}, H<sub>B</sub> = {{ sp.payoff_B }}
+  {% endfor %}
 </div>
 {% endif %}
 
-<h2>Результаты сравнения</h2>
+<h2>Сравнительная таблица</h2>
+<p class="note">Перебор опор находит <em>все</em> равновесия; Лемке–Хаусон — одно (зависит от начальной метки).</p>
 
-{# ── Сравнительная таблица ── #}
 <div class="compare-table-wrap">
 <table class="compare-table">
-    <thead>
-        <tr>
-            <th>Метод</th>
-            <th>Найдено равновесий</th>
-            <th>Стратегия игрока 1</th>
-            <th>Стратегия игрока 2</th>
-            <th>Выигрыш A / B</th>
-            <th>Время (сек.)</th>
-        </tr>
-    </thead>
-    <tbody>
+  <thead>
+    <tr>
+      <th>Метод</th>
+      <th>#</th>
+      <th>x* (игрок 1)</th>
+      <th>y* (игрок 2)</th>
+      <th>H<sub>A</sub> / H<sub>B</sub></th>
+      <th>Время, сек.</th>
+    </tr>
+  </thead>
+  <tbody>
 
-        {# Лемке–Хаусон (Nashpy) #}
-        <tr>
-            <td><strong>Лемке–Хаусон (Nashpy)</strong></td>
-            {% if lh_result.success %}
-            <td>1</td>
-            <td>{{ lh_result.equilibrium.row_strategy | map('round', 4) | list }}</td>
-            <td>{{ lh_result.equilibrium.col_strategy | map('round', 4) | list }}</td>
-            <td>
-                {% if lh_result.payoff_A is defined %}
-                {{ "%.4f" % lh_result.payoff_A }} / {{ "%.4f" % lh_result.payoff_B }}
-                {% else %}—{% endif %}
-            </td>
-            <td>{{ "%.6f" % lh_result.time_sec }}</td>
-            {% else %}
-            <td colspan="5" class="error">{{ lh_result.error }}</td>
-            {% endif %}
-        </tr>
+  {# ── Лемке–Хаусон Nashpy ── #}
+  <tr>
+    <td>Лемке–Хаусон (Nashpy)</td>
+    {% if lh_result.success %}
+    <td>1</td>
+    <td class="col-eq">{{ strat(lh_result.equilibrium, 'row') }}</td>
+    <td class="col-eq">{{ strat(lh_result.equilibrium, 'col') }}</td>
+    <td>{% if lh_result.payoff_A is defined %}{{ "%.4f"|format(lh_result.payoff_A) }} / {{ "%.4f"|format(lh_result.payoff_B) }}{% else %}—{% endif %}</td>
+    <td class="col-time">{{ "%.6f"|format(lh_result.time_sec) }}</td>
+    {% else %}<td colspan="5" class="error">{{ lh_result.error }}</td>{% endif %}
+  </tr>
 
-        {# Лемке–Хаусон (ручной) #}
-        <tr>
-            <td><strong>Лемке–Хаусон (ручной, Колобашкина)</strong></td>
-            {% if lh_manual_result and lh_manual_result.success %}
-            <td>1</td>
-            <td>{{ lh_manual_result.equilibrium.row_strategy | map('round', 4) | list }}</td>
-            <td>{{ lh_manual_result.equilibrium.col_strategy | map('round', 4) | list }}</td>
-            <td>
-                {% if lh_manual_result.payoff_A is defined %}
-                {{ "%.4f" % lh_manual_result.payoff_A }} / {{ "%.4f" % lh_manual_result.payoff_B }}
-                {% else %}—{% endif %}
-            </td>
-            <td>{{ "%.6f" % lh_manual_result.time_sec }}</td>
-            {% elif lh_manual_result %}
-            <td colspan="5" class="error">{{ lh_manual_result.error }}</td>
-            {% else %}
-            <td colspan="5" class="note">—</td>
-            {% endif %}
-        </tr>
+  {# ── Лемке–Хаусон ручной ── #}
+  <tr>
+    <td>Лемке–Хаусон (Колобашкина)</td>
+    {% if lh_manual_result and lh_manual_result.success %}
+    <td>1</td>
+    <td class="col-eq">
+      {% if lh_manual_result.row_strategy_str is defined %}
+        ({{ lh_manual_result.row_strategy_str | join(", ") }})
+      {% else %}{{ strat(lh_manual_result.equilibrium, 'row') }}{% endif %}
+    </td>
+    <td class="col-eq">
+      {% if lh_manual_result.col_strategy_str is defined %}
+        ({{ lh_manual_result.col_strategy_str | join(", ") }})
+      {% else %}{{ strat(lh_manual_result.equilibrium, 'col') }}{% endif %}
+    </td>
+    <td>{% if lh_manual_result.payoff_A is defined %}{{ "%.4f"|format(lh_manual_result.payoff_A) }} / {{ "%.4f"|format(lh_manual_result.payoff_B) }}{% else %}—{% endif %}</td>
+    <td class="col-time">{{ "%.6f"|format(lh_manual_result.time_sec) }}</td>
+    {% elif lh_manual_result %}<td colspan="5" class="error">{{ lh_manual_result.error }}</td>
+    {% else %}<td colspan="5" class="note">—</td>{% endif %}
+  </tr>
 
-        {# Перебор опор (Nashpy) — может вернуть несколько #}
-        {% if se_result and se_result.success %}
-        {% for eq in se_result.equilibria %}
-        <tr {% if loop.first %}{%endif%}>
-            {% if loop.first %}
-            <td rowspan="{{ se_result.count }}"><strong>Перебор опор (Nashpy)</strong></td>
-            {% endif %}
-            <td>{{ loop.index }} из {{ se_result.count }}</td>
-            <td>{{ eq.row_strategy | map('round', 4) | list }}</td>
-            <td>{{ eq.col_strategy | map('round', 4) | list }}</td>
-            <td>
-                {% if eq.payoff_A is defined %}
-                {{ "%.4f" % eq.payoff_A }} / {{ "%.4f" % eq.payoff_B }}
-                {% else %}—{% endif %}
-            </td>
-            {% if loop.first %}
-            <td rowspan="{{ se_result.count }}">{{ "%.6f" % se_result.time_sec }}</td>
-            {% endif %}
-        </tr>
-        {% endfor %}
-        {% else %}
-        <tr>
-            <td><strong>Перебор опор (Nashpy)</strong></td>
-            <td colspan="5" class="error">{{ se_result.error if se_result else "—" }}</td>
-        </tr>
-        {% endif %}
+  {# ── Перебор опор Nashpy ── #}
+  {% if se_result and se_result.success and se_result.equilibria %}
+    {% for eq in se_result.equilibria %}
+    <tr>
+      {% if loop.first %}<td rowspan="{{ se_result.count }}">Перебор опор (Nashpy)</td>{% endif %}
+      <td>{{ loop.index }} / {{ se_result.count }}</td>
+      <td class="col-eq">{{ strat(eq, 'row') }}</td>
+      <td class="col-eq">{{ strat(eq, 'col') }}</td>
+      <td>{% if eq.payoff_A is defined %}{{ "%.4f"|format(eq.payoff_A) }} / {{ "%.4f"|format(eq.payoff_B) }}{% else %}—{% endif %}</td>
+      {% if loop.first %}<td class="col-time" rowspan="{{ se_result.count }}">{{ "%.6f"|format(se_result.time_sec) }}</td>{% endif %}
+    </tr>
+    {% endfor %}
+  {% else %}
+  <tr><td>Перебор опор (Nashpy)</td><td colspan="5" class="error">{{ se_result.error if se_result else "—" }}</td></tr>
+  {% endif %}
 
-        {# Перебор опор (ручной) — может вернуть несколько #}
-        {% if se_hand_result and se_hand_result.success %}
-        {% for eq in se_hand_result.equilibria %}
-        <tr>
-            {% if loop.first %}
-            <td rowspan="{{ se_hand_result.count }}"><strong>Перебор опор (ручной)</strong></td>
-            {% endif %}
-            <td>{{ loop.index }} из {{ se_hand_result.count }}</td>
-            <td>{{ eq.row_strategy | map('round', 4) | list }}</td>
-            <td>{{ eq.col_strategy | map('round', 4) | list }}</td>
-            <td>
-                {% if eq.payoff_A is defined %}
-                {{ "%.4f" % eq.payoff_A }} / {{ "%.4f" % eq.payoff_B }}
-                {% else %}—{% endif %}
-            </td>
-            {% if loop.first %}
-            <td rowspan="{{ se_hand_result.count }}">{{ "%.6f" % se_hand_result.time_sec }}</td>
-            {% endif %}
-        </tr>
-        {% endfor %}
-        {% else %}
-        <tr>
-            <td><strong>Перебор опор (ручной)</strong></td>
-            <td colspan="5" class="error">{{ se_hand_result.error if se_hand_result else "—" }}</td>
-        </tr>
-        {% endif %}
+  {# ── Перебор опор ручной ── #}
+  {% if se_hand_result and se_hand_result.success and se_hand_result.equilibria %}
+    {% for eq in se_hand_result.equilibria %}
+    <tr>
+      {% if loop.first %}<td rowspan="{{ se_hand_result.count }}">Перебор опор (ручной)</td>{% endif %}
+      <td>{{ loop.index }} / {{ se_hand_result.count }}</td>
+      <td class="col-eq">{{ strat(eq, 'row') }}</td>
+      <td class="col-eq">{{ strat(eq, 'col') }}</td>
+      <td>{% if eq.payoff_A is defined %}{{ "%.4f"|format(eq.payoff_A) }} / {{ "%.4f"|format(eq.payoff_B) }}{% else %}—{% endif %}</td>
+      {% if loop.first %}<td class="col-time" rowspan="{{ se_hand_result.count }}">{{ "%.6f"|format(se_hand_result.time_sec) }}</td>{% endif %}
+    </tr>
+    {% endfor %}
+  {% else %}
+  <tr><td>Перебор опор (ручной)</td><td colspan="5" class="error">{{ se_hand_result.error if se_hand_result else "—" }}</td></tr>
+  {% endif %}
 
-    </tbody>
+  </tbody>
 </table>
 </div>
 
-{# ── Сравнение найденных равновесий ── #}
-<h2>Сравнение найденных равновесий</h2>
-<p class="note">
-    Метод перебора опор находит <em>все</em> равновесия Нэша, тогда как Лемке–Хаусон
-    находит одно (зависящее от начальной метки).
-</p>
+{# ── Детальное сравнение равновесий ──────────────────────────────────────── #}
+<h2>Детали найденных равновесий</h2>
 
-{# Лемке–Хаусон Nashpy #}
+{% macro detail_card(title, eq_list, time_sec, HA_str=None, HB_str=None, HA=None, HB=None) %}
+<div class="eq-card" style="margin-bottom:12px;">
+  <h3 style="margin-top:0; font-size:14px; color:var(--blue-dark);">{{ title }}</h3>
+  {% for eq in eq_list %}
+  {% if not loop.first %}<hr style="border:none;border-top:1px solid #c8e6c9;margin:10px 0">{% endif %}
+  <div class="eq-row">
+    <span class="eq-label">Игрок 1: x* =</span>
+    <span class="eq-frac">
+      {% if eq.row_strategy_frac is defined %}({{ eq.row_strategy_frac | join(", ") }})
+      {% else %}({{ eq.row_strategy | map('float') | map('round', 6) | join(", ") }}){% endif %}
+    </span>
+  </div>
+  <div class="eq-row">
+    <span class="eq-label">Игрок 2: y* =</span>
+    <span class="eq-frac">
+      {% if eq.col_strategy_frac is defined %}({{ eq.col_strategy_frac | join(", ") }})
+      {% else %}({{ eq.col_strategy | map('float') | map('round', 6) | join(", ") }}){% endif %}
+    </span>
+  </div>
+  {% if eq.payoff_A is defined %}
+  <div class="eq-payoff">H<sub>A</sub> = {{ "%.4f"|format(eq.payoff_A) }} &nbsp;&nbsp; H<sub>B</sub> = {{ "%.4f"|format(eq.payoff_B) }}</div>
+  {% endif %}
+  {% endfor %}
+  {% if HA is not none %}
+  <div class="eq-payoff">H<sub>A</sub> = <strong>{{ HA_str if HA_str else "%.4f"|format(HA) }}</strong> &nbsp;&nbsp; H<sub>B</sub> = <strong>{{ HB_str if HB_str else "%.4f"|format(HB) }}</strong></div>
+  {% endif %}
+  <div class="eq-meta">Время: {{ "%.6f"|format(time_sec) }} сек.</div>
+</div>
+{% endmacro %}
+
 {% if lh_result.success %}
-<h3>Лемке–Хаусон (Nashpy)</h3>
-<p>
-    Игрок 1: ({{ lh_result.equilibrium.row_strategy | map('round', 6) | join(", ") }})<br>
-    Игрок 2: ({{ lh_result.equilibrium.col_strategy | map('round', 6) | join(", ") }})
-</p>
+{{ detail_card("Лемке–Хаусон (Nashpy)",
+   [lh_result.equilibrium], lh_result.time_sec) }}
 {% endif %}
 
-{# Лемке–Хаусон ручной #}
 {% if lh_manual_result and lh_manual_result.success %}
-<h3>Лемке–Хаусон (ручной)</h3>
-<p>
-    Игрок 1: ({{ lh_manual_result.row_strategy_str | join(", ") }})<br>
-    Игрок 2: ({{ lh_manual_result.col_strategy_str | join(", ") }})
-    <span class="note">&nbsp;H<sub>A</sub> = {{ lh_manual_result.HA_str }},
-    H<sub>B</sub> = {{ lh_manual_result.HB_str }}</span>
-</p>
+{% set eq_m = {"row_strategy": lh_manual_result.equilibrium.row_strategy,
+               "col_strategy": lh_manual_result.equilibrium.col_strategy,
+               "row_strategy_frac": lh_manual_result.row_strategy_str,
+               "col_strategy_frac": lh_manual_result.col_strategy_str,
+               "payoff_A": lh_manual_result.payoff_A if lh_manual_result.payoff_A is defined else none,
+               "payoff_B": lh_manual_result.payoff_B if lh_manual_result.payoff_B is defined else none} %}
+{{ detail_card("Лемке–Хаусон (ручной, Колобашкина)",
+   [eq_m], lh_manual_result.time_sec,
+   HA_str=lh_manual_result.HA_str, HB_str=lh_manual_result.HB_str,
+   HA=lh_manual_result.HA, HB=lh_manual_result.HB) }}
 {% endif %}
 
-{# Перебор опор — все равновесия #}
 {% if se_result and se_result.success %}
-<h3>Перебор опор (Nashpy) — все {{ se_result.count }} равновесий</h3>
-{% for eq in se_result.equilibria %}
-<p>
-    Игрок 1: ({{ eq.row_strategy | map('round', 6) | join(", ") }})<br>
-    Игрок 2: ({{ eq.col_strategy | map('round', 6) | join(", ") }})
-</p>
-{% if not loop.last %}<hr style="margin:6px 0">{% endif %}
-{% endfor %}
+{{ detail_card("Перебор опор (Nashpy) — все " ~ se_result.count ~ " равновесий",
+   se_result.equilibria, se_result.time_sec) }}
 {% endif %}
 
 {% if se_hand_result and se_hand_result.success %}
-<h3>Перебор опор (ручной) — все {{ se_hand_result.count }} равновесий</h3>
-{% for eq in se_hand_result.equilibria %}
-<p>
-    Игрок 1: ({{ eq.row_strategy | map('round', 6) | join(", ") }})<br>
-    Игрок 2: ({{ eq.col_strategy | map('round', 6) | join(", ") }})
-</p>
-{% if not loop.last %}<hr style="margin:6px 0">{% endif %}
-{% endfor %}
+{{ detail_card("Перебор опор (ручной) — все " ~ se_hand_result.count ~ " равновесий",
+   se_hand_result.equilibria, se_hand_result.time_sec) }}
 {% endif %}
 
 {% endif %}{# end if lh_result #}

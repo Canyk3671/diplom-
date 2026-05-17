@@ -1,49 +1,79 @@
 {% extends "base.html" %}
-{% block title %}Результат решения{% endblock %}
+{% block title %}Результат{% endblock %}
 
 {% block content %}
 
-{# ─── Макрос для рендера одной таблицы алгоритма ────────────────────────── #}
-{% macro lh_table(t) %}
-{% if t %}
-<div class="lh-table-wrap">
-  <table class="lh-table">
-    <thead>
-      <tr>
-        <th class="lh-th-lbl"></th>
-        {% for cl in t.col_labels %}<th>{{ cl }}</th>{% endfor %}
-        {% if t.lambda_col %}<th class="lh-th-lam">λ / μ</th>{% endif %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for i in range(t.rows | length) %}
-      <tr>
-        <td class="lh-td-lbl">{{ t.row_labels[i] }}</td>
-        {% for v in t.rows[i] %}<td>{{ v }}</td>{% endfor %}
-        {% if t.lambda_col %}
-        <td class="lh-td-lam">
-          {{ t.lambda_col[i] }}
-          {% if t.lambda_src %}{{ t.lambda_src[i] }}{% endif %}
-        </td>
-        {% endif %}
-      </tr>
-      {% endfor %}
-      {% if t.bottom %}
-      <tr class="lh-tr-bot">
-        <td class="lh-td-lbl">{{ t.bottom_label }}</td>
-        {% for v in t.bottom %}<td>{{ v }}</td>{% endfor %}
-        {% if t.lambda_col %}<td></td>{% endif %}
-      </tr>
+{# ── Макрос: одна таблица LH ──────────────────────────────────────────────── #}
+{% macro lh_table(t) %}{% if t %}
+<div class="lh-table-wrap"><table class="lh-table">
+  <thead><tr>
+    <th class="lh-th-lbl"></th>
+    {% for cl in t.col_labels %}<th>{{ cl }}</th>{% endfor %}
+    {% if t.lambda_col %}<th class="lh-th-lam">λ / μ</th>{% endif %}
+  </tr></thead>
+  <tbody>
+    {% for i in range(t.rows|length) %}
+    <tr>
+      <td class="lh-td-lbl">{{ t.row_labels[i] }}</td>
+      {% for v in t.rows[i] %}<td>{{ v }}</td>{% endfor %}
+      {% if t.lambda_col %}
+      <td class="lh-td-lam">{{ t.lambda_col[i] }}{% if t.lambda_src %} {{ t.lambda_src[i] }}{% endif %}</td>
       {% endif %}
-    </tbody>
-  </table>
+    </tr>
+    {% endfor %}
+    {% if t.bottom %}
+    <tr class="lh-tr-bot">
+      <td class="lh-td-lbl">{{ t.bottom_label }}</td>
+      {% for v in t.bottom %}<td>{{ v }}</td>{% endfor %}
+      {% if t.lambda_col %}<td></td>{% endif %}
+    </tr>
+    {% endif %}
+  </tbody>
+</table></div>
+{% endif %}{% endmacro %}
+
+{# ── Макрос: карточка одного равновесия ──────────────────────────────────── #}
+{% macro eq_card(eq, label="", HA=None, HB=None, HA_str=None, HB_str=None, time_sec=None, iteration=None) %}
+<div class="eq-card">
+  {% if label %}<h2>{{ label }}</h2>{% endif %}
+  <div class="eq-row">
+    <span class="eq-label">Игрок 1: x* =</span>
+    <span class="eq-frac">({{ eq.row_strategy_frac | join(", ") }})</span>
+    <span class="eq-approx">≈ ({{ eq.row_strategy | map('float') | map('round', 4) | join(", ") }})</span>
+  </div>
+  <div class="eq-row">
+    <span class="eq-label">Игрок 2: y* =</span>
+    <span class="eq-frac">({{ eq.col_strategy_frac | join(", ") }})</span>
+    <span class="eq-approx">≈ ({{ eq.col_strategy | map('float') | map('round', 4) | join(", ") }})</span>
+  </div>
+  {% if eq.payoff_A is defined %}
+  <div class="eq-payoff">
+    H<sub>A</sub> = <strong>{{ "%.4f"|format(eq.payoff_A) }}</strong>
+    &nbsp;&nbsp;
+    H<sub>B</sub> = <strong>{{ "%.4f"|format(eq.payoff_B) }}</strong>
+  </div>
+  {% endif %}
+  {% if HA is not none %}
+  <div class="eq-payoff">
+    H<sub>A</sub> = <strong>{% if HA_str %}{{ HA_str }}{% else %}{{ "%.4f"|format(HA) }}{% endif %}</strong>
+    &nbsp;&nbsp;
+    H<sub>B</sub> = <strong>{% if HB_str %}{{ HB_str }}{% else %}{{ "%.4f"|format(HB) }}{% endif %}</strong>
+  </div>
+  {% endif %}
+  {% if time_sec is not none %}
+  <div class="eq-meta">
+    {% if iteration %}Найдено за {{ iteration }} итерацию(-и). &nbsp;{% endif %}
+    Время: {{ "%.6f"|format(time_sec) }} сек.
+  </div>
+  {% endif %}
 </div>
-{% endif %}
 {% endmacro %}
+
+{# ════════════════════════════════════════════════════════════════════════════ #}
 
 <h1>Результат решения</h1>
 
-<p><strong>Метод:</strong>
+<p style="color:#555; font-size:13px;"><strong>Метод:</strong>
 {% if method == "lemke_howson" %}Лемке–Хаусон (Nashpy)
 {% elif method == "support_enumeration" %}Перебор опор (Nashpy)
 {% elif method == "support_enumeration_hand" %}Перебор опор (ручная реализация)
@@ -52,60 +82,55 @@
 {% else %}{{ method }}{% endif %}
 </p>
 
+{# ── Свойства ─────────────────────────────────────────────────────────────── #}
 {% if result.game_properties %}
 <div class="props-block">
   <strong>Свойства игры:</strong>
-  {{ result.game_properties.shape[0] }}×{{ result.game_properties.shape[1] }} &nbsp;|&nbsp;
-  Нулевая сумма: {{ "Да" if result.game_properties.is_zero_sum else "Нет" }} &nbsp;|&nbsp;
-  Симметричная: {{ "Да" if result.game_properties.is_symmetric else "Нет" }} &nbsp;|&nbsp;
-  Невырожденная: {{ "Да" if result.game_properties.is_nondegenerate else "Нет" }}
+  {{ result.game_properties.shape[0] }}×{{ result.game_properties.shape[1] }}
+  &nbsp;|&nbsp; Нулевая сумма: {{ "Да" if result.game_properties.is_zero_sum else "Нет" }}
+  &nbsp;|&nbsp; Симметричная: {{ "Да" if result.game_properties.is_symmetric else "Нет" }}
+  &nbsp;|&nbsp; Невырожденная: {{ "Да" if result.game_properties.is_nondegenerate else "Нет" }}
 </div>
 {% endif %}
 
+{# ── Седловая точка ───────────────────────────────────────────────────────── #}
 {% if result.saddle_point %}
   {% if result.saddle_point.has_saddle_point %}
   <div class="saddle-block">
-    <h2>Седловая точка (равновесие в чистых стратегиях)</h2>
+    <strong>⚑ Седловая точка (равновесие в чистых стратегиях):</strong>
     {% for sp in result.saddle_point.saddle_points %}
-    <p>Стратегия ({{ sp.row + 1 }}, {{ sp.col + 1 }}):
-       Выигрыш A = {{ sp.payoff_A }}, B = {{ sp.payoff_B }}</p>
+    <p style="margin:4px 0">Стратегии ({{ sp.row+1 }}, {{ sp.col+1 }}):
+       H<sub>A</sub> = {{ sp.payoff_A }}, H<sub>B</sub> = {{ sp.payoff_B }}</p>
     {% endfor %}
   </div>
   {% else %}
-  <p class="note">Седловых точек нет — равновесие в чистых стратегиях отсутствует.</p>
+  <p class="note">Седловых точек нет — равновесие только в смешанных стратегиях.</p>
   {% endif %}
 {% endif %}
 
+{# ── Ошибка ───────────────────────────────────────────────────────────────── #}
 {% if not result.success %}
-<p class="error">Ошибка: {{ result.error }}</p>
+<p class="error">⚠ Ошибка: {{ result.error }}</p>
 
+{# ── РУЧНОЙ ЛЕМКЕ–ХАУСОН ──────────────────────────────────────────────────── #}
 {% elif method == "lemke_howson_manual" %}
 
-<div class="lh-answer">
-  <h2>Найденное равновесие (Нэша)</h2>
-  <p>
-    <strong>Стратегия игрока 1 (строчный):</strong>
-    ({{ result.row_strategy_str | join(", ") }})
-    ≈ ({{ result.equilibrium.row_strategy | map('float') | map('round', 4) | join(", ") }})
-  </p>
-  <p>
-    <strong>Стратегия игрока 2 (столбцовый):</strong>
-    ({{ result.col_strategy_str | join(", ") }})
-    ≈ ({{ result.equilibrium.col_strategy | map('float') | map('round', 4) | join(", ") }})
-  </p>
-  <p>
-    <strong>Цена игры H<sub>A</sub></strong> = {{ result.HA_str }} ≈ {{ "%.4f" % result.HA }}
-    &nbsp;&nbsp;
-    <strong>H<sub>B</sub></strong> = {{ result.HB_str }} ≈ {{ "%.4f" % result.HB }}
-  </p>
-  {% if result.payoff_A is defined %}
-  <p>Ожидаемый выигрыш A: {{ "%.4f" % result.payoff_A }}, B: {{ "%.4f" % result.payoff_B }}</p>
-  {% endif %}
-  <p class="note">Найдено за {{ result.iteration }} итерацию(-и). Время: {{ "%.6f" % result.time_sec }} сек.</p>
-</div>
+{# Подготовим eq-подобный объект для макроса #}
+{% set eq_manual = {
+    "row_strategy":      result.equilibrium.row_strategy,
+    "col_strategy":      result.equilibrium.col_strategy,
+    "row_strategy_frac": result.row_strategy_str,
+    "col_strategy_frac": result.col_strategy_str
+} %}
+{{ eq_card(eq_manual,
+   label="Найденное равновесие Нэша",
+   HA=result.HA, HB=result.HB,
+   HA_str=result.HA_str, HB_str=result.HB_str,
+   time_sec=result.time_sec,
+   iteration=result.iteration) }}
 
 {% if result.steps %}
-<h2>Ход алгоритма (по учебнику Колобашкиной, раздел 3.4)</h2>
+<h2>Ход алгоритма (Колобашкина, раздел 3.4)</h2>
 
 {% set blk1 = result.steps[0] %}
 <div class="lh-block">
@@ -117,68 +142,70 @@
 {% for blk in result.steps[1:] %}
 <div class="lh-block">
   <h3>{{ blk.phase }}: {{ blk.title }}</h3>
-  {% if blk.sub_steps %}
-    {% for sub in blk.sub_steps %}
-    <div class="lh-substep">
-      <h4>{{ sub.title }}</h4>
-      {% if sub.text %}<pre class="lh-text">{{ sub.text }}</pre>{% endif %}
-      {% for t in sub.tables %}{{ lh_table(t) }}{% endfor %}
-    </div>
-    {% endfor %}
-  {% endif %}
+  {% if blk.sub_steps %}{% for sub in blk.sub_steps %}
+  <div class="lh-substep">
+    <h4>{{ sub.title }}</h4>
+    {% if sub.text %}<pre class="lh-text">{{ sub.text }}</pre>{% endif %}
+    {% for t in sub.tables %}{{ lh_table(t) }}{% endfor %}
+  </div>
+  {% endfor %}{% endif %}
 </div>
 {% endfor %}
 {% endif %}
 
-{% else %}
+{# ── Методы с одним равновесием ───────────────────────────────────────────── #}
+{% elif result.equilibrium %}
+{{ eq_card(result.equilibrium,
+   label="Найденное равновесие Нэша",
+   time_sec=result.time_sec) }}
 
+{# ── Методы с несколькими равновесиями ───────────────────────────────────── #}
+{% elif result.equilibria %}
+<h2>Найденные равновесия Нэша ({{ result.count }})</h2>
+{% for eq in result.equilibria %}
+{{ eq_card(eq, label="Равновесие " ~ loop.index, time_sec=result.time_sec if loop.first else none) }}
+{% endfor %}
+
+{# ── Чистые + смешанные (графический метод) ──────────────────────────────── #}
+{% else %}
   {% if result.pure_equilibria %}
   <h2>Чистые равновесия</h2>
   {% for eq in result.pure_equilibria %}
-  <p>Стратегия ({{ eq.row + 1 }}, {{ eq.col + 1 }}):
-     Выигрыш A = {{ eq.payoff_A }}, B = {{ eq.payoff_B }}</p>
+  <div class="eq-card">
+    <div class="eq-row">
+      <span class="eq-label">Стратегии:</span>
+      <span class="eq-frac">({{ eq.row+1 }}, {{ eq.col+1 }})</span>
+    </div>
+    <div class="eq-payoff">H<sub>A</sub> = {{ eq.payoff_A }}, H<sub>B</sub> = {{ eq.payoff_B }}</div>
+  </div>
   {% endfor %}
   {% endif %}
 
   {% if result.mixed_equilibria %}
   <h2>Смешанные равновесия</h2>
   {% for eq in result.mixed_equilibria %}
-  <p>p* = ({{ eq.p_frac }}; {{ "%.3f" % (1 - eq.p) }}),
-     q* = ({{ eq.q_frac }}; {{ "%.3f" % (1 - eq.q) }})</p>
-  <p>Выигрыш A = {{ "%.4f" % eq.payoff_A }}, B = {{ "%.4f" % eq.payoff_B }}</p>
-  {% endfor %}
-  {% endif %}
-
-  {% if result.equilibrium %}
-  <h2>Найденное равновесие</h2>
-  <p><strong>Стратегия игрока 1:</strong> {{ result.equilibrium.row_strategy }}</p>
-  <p><strong>Стратегия игрока 2:</strong> {{ result.equilibrium.col_strategy }}</p>
-  {% if result.payoff_A is defined %}
-  <p>Ожидаемый выигрыш A: {{ "%.4f" % result.payoff_A }}, B: {{ "%.4f" % result.payoff_B }}</p>
-  {% endif %}
-  {% endif %}
-
-  {% if result.equilibria %}
-  <h2>Найденные равновесия ({{ result.count }})</h2>
-  {% for eq in result.equilibria %}
-  <p><strong>Игрок 1:</strong> {{ eq.row_strategy }}<br>
-     <strong>Игрок 2:</strong> {{ eq.col_strategy }}</p>
-  {% if eq.payoff_A is defined %}
-  <p>Выигрыш A: {{ "%.4f" % eq.payoff_A }}, B: {{ "%.4f" % eq.payoff_B }}</p>
-  {% endif %}
-  {% if not loop.last %}<hr>{% endif %}
+  <div class="eq-card">
+    <div class="eq-row">
+      <span class="eq-label">Игрок 1: x* =</span>
+      <span class="eq-frac">({{ eq.p_frac }}, {{ eq.q_1_frac if eq.q_1_frac is defined else "1-p" }})</span>
+    </div>
+    <div class="eq-row">
+      <span class="eq-label">Игрок 2: y* =</span>
+      <span class="eq-frac">({{ eq.q_frac }}, {{ eq.p_1_frac if eq.p_1_frac is defined else "1-q" }})</span>
+    </div>
+    <div class="eq-payoff">H<sub>A</sub> = {{ "%.4f"|format(eq.payoff_A) }}, H<sub>B</sub> = {{ "%.4f"|format(eq.payoff_B) }}</div>
+  </div>
   {% endfor %}
   {% endif %}
 
   {% if result.plot %}
-  <h2>График</h2>
-  <img src="data:image/png;base64,{{ result.plot }}" alt="График" style="max-width:100%;">
+  <h2>График (графический метод)</h2>
+  <img src="data:image/png;base64,{{ result.plot }}" alt="График" style="max-width:100%; border-radius:6px;">
   {% endif %}
 
-  <p class="note">Время: {{ "%.6f" % result.time_sec }} сек.</p>
-
+  <p class="note">Время: {{ "%.6f"|format(result.time_sec) }} сек.</p>
 {% endif %}
 
-<br><a href="/">← Назад</a>
+<a href="/" class="btn-back">Назад</a>
 
 {% endblock %}

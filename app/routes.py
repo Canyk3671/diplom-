@@ -1,4 +1,3 @@
-# app/routes.py
 from fastapi import APIRouter, Request, Form, HTTPException, UploadFile, File
 import json
 
@@ -62,14 +61,14 @@ async def solve(
 async def compare_form(request: Request):
     return templates.TemplateResponse(request=request, name="comparison.html", context={
         "lh_result": None,
+        "lh_manual_result": None,
         "se_result": None,
+        "se_hand_result": None,
         "lh_all_result": None,
         "matrix_a_json": "",
         "matrix_b_json": "",
-        "rows_a": 2,
-        "cols_a": 2,
-        "rows_b": 2,
-        "cols_b": 2
+        "rows_a": 2, "cols_a": 2,
+        "rows_b": 2, "cols_b": 2,
     })
 
 
@@ -92,27 +91,27 @@ async def compare(
 
         game = BimatrixGame(A, B)
         service = SolverService()
-        lh_result = service.solve(game, "lemke_howson", initial_label=0)
-        se_result = service.solve(game, "support_enumeration")
-        se_hand_result = service.solve(game, "support_enumeration_hand")
-        lh_all_result = service.solve(game, "lemke_howson_all")
+        lh_result         = service.solve(game, "lemke_howson", initial_label=0)
+        lh_manual_result  = service.solve(game, "lemke_howson_manual")
+        se_result         = service.solve(game, "support_enumeration")
+        se_hand_result    = service.solve(game, "support_enumeration_hand")
+        lh_all_result     = service.solve(game, "lemke_howson_all")
+
     except Exception as e:
-        lh_result = {"success": False, "error": str(e)}
-        se_result = {"success": False, "error": str(e)}
-        se_hand_result = {"success": False, "error": str(e)}
-        lh_all_result = {"success": False, "error": str(e)}
-        A = [[0, 0], [0, 0]]
-        B = [[0, 0], [0, 0]]
+        err = {"success": False, "error": str(e)}
+        lh_result = lh_manual_result = se_result = se_hand_result = lh_all_result = err
+        A = B = [[0, 0], [0, 0]]
 
     return templates.TemplateResponse(request=request, name="comparison.html", context={
-        "lh_result": lh_result,
-        "se_result": se_result,
-        "se_hand_result": se_hand_result,
-        "lh_all_result": lh_all_result,
-        "matrix_a_json": json.dumps(A),
-        "matrix_b_json": json.dumps(B),
+        "lh_result":        lh_result,
+        "lh_manual_result": lh_manual_result,
+        "se_result":        se_result,
+        "se_hand_result":   se_hand_result,
+        "lh_all_result":    lh_all_result,
+        "matrix_a_json":    json.dumps(A),
+        "matrix_b_json":    json.dumps(B),
         "rows_a": len(A),
         "cols_a": len(A[0]) if A else 2,
         "rows_b": len(B),
-        "cols_b": len(B[0]) if B else 2
+        "cols_b": len(B[0]) if B else 2,
     })

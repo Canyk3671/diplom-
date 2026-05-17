@@ -1,4 +1,3 @@
-<!-- app/templates/result.html -->
 {% extends "base.html" %}
 {% block title %}Результат решения{% endblock %}
 {% block content %}
@@ -9,6 +8,8 @@
     Лемке–Хаусон (Nashpy)
 {% elif method == "support_enumeration" %}
     Перебор опор (Nashpy)
+{% elif method == "support_enumeration_hand" %}
+    Перебор опор (ручная реализация)
 {% elif method == "graphic_2x2" %}
     Графический метод (2×2)
 {% elif method == "lemke_howson_manual" %}
@@ -26,8 +27,8 @@
                 <p>Найдено {{ result.saddle_point.count }} седловых точек:</p>
             {% endif %}
             {% for sp in result.saddle_point.saddle_points %}
-                <p>Строка {{ sp.row + 1 }}, Столбец {{ sp.col + 1 }} |
-                   Выигрыш игрока 1: {{ sp.payoff_A }}, Выигрыш игрока 2: {{ sp.payoff_B }}</p>
+                <p>Стратегия ({{ sp.row + 1 }}, {{ sp.col + 1 }}):
+                   выигрыш A = {{ sp.payoff_A }}, B = {{ sp.payoff_B }}</p>
             {% endfor %}
         {% else %}
             <h2>Седловая точка</h2>
@@ -57,13 +58,19 @@
         <h2>Найденное равновесие</h2>
         <p><strong>Стратегия игрока 1:</strong> {{ result.equilibrium.row_strategy }}</p>
         <p><strong>Стратегия игрока 2:</strong> {{ result.equilibrium.col_strategy }}</p>
+        {% if result.payoff_A is defined %}
+        <p>Ожидаемый выигрыш A: {{ "%.4f" % result.payoff_A }}, B: {{ "%.4f" % result.payoff_B }}</p>
+        {% endif %}
     {% endif %}
 
     {% if result.equilibria %}
-        <h2>Найденные равновесия</h2>
+        <h2>Найденные равновесия ({{ result.count }})</h2>
         {% for eq in result.equilibria %}
-            <p><strong>Стратегия игрока 1:</strong> {{ eq.row_strategy }}</p>
-            <p><strong>Стратегия игрока 2:</strong> {{ eq.col_strategy }}</p>
+            <p><strong>Игрок 1:</strong> {{ eq.row_strategy }}</p>
+            <p><strong>Игрок 2:</strong> {{ eq.col_strategy }}</p>
+            {% if eq.payoff_A is defined %}
+            <p>Выигрыш A: {{ "%.4f" % eq.payoff_A }}, B: {{ "%.4f" % eq.payoff_B }}</p>
+            {% endif %}
             {% if not loop.last %}<hr>{% endif %}
         {% endfor %}
     {% endif %}

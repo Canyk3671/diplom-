@@ -94,10 +94,12 @@ async def compare(
         service = SolverService()
         lh_result = service.solve(game, "lemke_howson", initial_label=0)
         se_result = service.solve(game, "support_enumeration")
+        se_hand_result = service.solve(game, "support_enumeration_hand")
         lh_all_result = service.solve(game, "lemke_howson_all")
     except Exception as e:
         lh_result = {"success": False, "error": str(e)}
         se_result = {"success": False, "error": str(e)}
+        se_hand_result = {"success": False, "error": str(e)}
         lh_all_result = {"success": False, "error": str(e)}
         A = [[0, 0], [0, 0]]
         B = [[0, 0], [0, 0]]
@@ -105,6 +107,7 @@ async def compare(
     return templates.TemplateResponse(request=request, name="comparison.html", context={
         "lh_result": lh_result,
         "se_result": se_result,
+        "se_hand_result": se_hand_result,
         "lh_all_result": lh_all_result,
         "matrix_a_json": json.dumps(A),
         "matrix_b_json": json.dumps(B),

@@ -1,4 +1,3 @@
-<!-- app/templates/index.html -->
 {% extends "base.html" %}
 {% block title %}Bimatrix Solver — Главная{% endblock %}
 {% block content %}
@@ -18,7 +17,9 @@
                     <label>Строк: <input type="number" id="rowsA" value="2" min="1" max="20" onchange="buildMainGrid()"></label>
                     <label>Столбцов: <input type="number" id="colsA" value="2" min="1" max="20" onchange="buildMainGrid()"></label>
                 </div>
-                <div id="gridA" class="matrix-grid"></div>
+                <div class="matrix-scroll-wrapper">
+                    <div id="gridA" class="matrix-grid"></div>
+                </div>
                 <input type="hidden" name="matrix_a" id="matrix_a">
             </div>
             <div class="matrix-group">
@@ -27,7 +28,9 @@
                     <label>Строк: <input type="number" id="rowsB" value="2" min="1" max="20" onchange="buildMainGrid()"></label>
                     <label>Столбцов: <input type="number" id="colsB" value="2" min="1" max="20" onchange="buildMainGrid()"></label>
                 </div>
-                <div id="gridB" class="matrix-grid"></div>
+                <div class="matrix-scroll-wrapper">
+                    <div id="gridB" class="matrix-grid"></div>
+                </div>
                 <input type="hidden" name="matrix_b" id="matrix_b">
             </div>
         </div>
@@ -36,6 +39,7 @@
         <select name="method">
             <option value="lemke_howson">Лемке–Хаусон (Nashpy)</option>
             <option value="support_enumeration">Перебор опор (Nashpy)</option>
+            <option value="support_enumeration_hand">Перебор опор (ручной)</option>
             <option value="graphic_2x2">Графический метод (2×2)</option>
             <option value="lemke_howson_manual">Лемке–Хаусон (ручная реализация)</option>
         </select>
@@ -52,6 +56,7 @@
         <select name="method">
             <option value="lemke_howson">Лемке–Хаусон (Nashpy)</option>
             <option value="support_enumeration">Перебор опор (Nashpy)</option>
+            <option value="support_enumeration_hand">Перебор опор (ручной)</option>
             <option value="graphic_2x2">Графический метод (2×2)</option>
             <option value="lemke_howson_manual">Лемке–Хаусон (ручная реализация)</option>
         </select>
@@ -59,7 +64,4 @@
         <button type="submit">Решить</button>
     </form>
 </div>
-
-<hr>
-<p class="note">* Ручная реализация Лемке–Хаусона по учебнику Колобашкиной находится в разработке.</p>
 {% endblock %}

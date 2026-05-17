@@ -1,4 +1,3 @@
-<!-- app/templates/comparison.html -->
 {% extends "base.html" %}
 {% block title %}Сравнение алгоритмов{% endblock %}
 {% block content %}
@@ -18,7 +17,9 @@
                     <label>Строк: <input type="number" id="comp_rowsA" value="{{ rows_a }}" min="1" max="20" onchange="buildCompareGrid()"></label>
                     <label>Столбцов: <input type="number" id="comp_colsA" value="{{ cols_a }}" min="1" max="20" onchange="buildCompareGrid()"></label>
                 </div>
-                <div id="comp_gridA" class="matrix-grid"></div>
+                <div class="matrix-scroll-wrapper">
+                    <div id="comp_gridA" class="matrix-grid"></div>
+                </div>
                 <input type="hidden" name="matrix_a" id="comp_matrix_a" value="{{ matrix_a_json }}">
             </div>
             <div class="matrix-group">
@@ -27,7 +28,9 @@
                     <label>Строк: <input type="number" id="comp_rowsB" value="{{ rows_b }}" min="1" max="20" onchange="buildCompareGrid()"></label>
                     <label>Столбцов: <input type="number" id="comp_colsB" value="{{ cols_b }}" min="1" max="20" onchange="buildCompareGrid()"></label>
                 </div>
-                <div id="comp_gridB" class="matrix-grid"></div>
+                <div class="matrix-scroll-wrapper">
+                    <div id="comp_gridB" class="matrix-grid"></div>
+                </div>
                 <input type="hidden" name="matrix_b" id="comp_matrix_b" value="{{ matrix_b_json }}">
             </div>
         </div>
@@ -48,34 +51,65 @@
 <hr>
 <h2>Результаты сравнения</h2>
 
-<h3>Lemke-Howson (одна метка)</h3>
+<h3>Лемке–Хаусон (одна метка)</h3>
 {% if lh_result.success %}
-    <p>Равновесие: row={{ lh_result.equilibrium.row_strategy }}, col={{ lh_result.equilibrium.col_strategy }}</p>
+    <p>Игрок 1: {{ lh_result.equilibrium.row_strategy }}<br>Игрок 2: {{ lh_result.equilibrium.col_strategy }}</p>
+    {% if lh_result.payoff_A is defined %}
+    <p>Выигрыш A: {{ "%.4f" % lh_result.payoff_A }}, B: {{ "%.4f" % lh_result.payoff_B }}</p>
+    {% endif %}
     <p>Время: {{ "%.6f" % lh_result.time_sec }} сек.</p>
 {% else %}
     <p class="error">Ошибка: {{ lh_result.error }}</p>
 {% endif %}
 
-<h3>Перебор опор</h3>
+<h3>Перебор опор (Nashpy)</h3>
 {% if se_result.success %}
     <p>Количество равновесий: {{ se_result.count }}</p>
     {% for eq in se_result.equilibria %}
-        <p>{{ eq.row_strategy }} / {{ eq.col_strategy }}</p>
+        <p>Игрок 1: {{ eq.row_strategy }}<br>Игрок 2: {{ eq.col_strategy }}
+        {% if eq.payoff_A is defined %}<br>Выигрыш A: {{ "%.4f" % eq.payoff_A }}, B: {{ "%.4f" % eq.payoff_B }}{% endif %}</p>
+        {% if not loop.last %}<hr>{% endif %}
     {% endfor %}
     <p>Время: {{ "%.6f" % se_result.time_sec }} сек.</p>
 {% else %}
     <p class="error">Ошибка: {{ se_result.error }}</p>
 {% endif %}
 
-<h3>Lemke-Howson (все метки)</h3>
+<h3>Перебор опор (ручной)</h3>
+{% if se_hand_result.success %}
+    <p>Количество равновесий: {{ se_hand_result.count }}</p>
+    {% for eq in se_hand_result.equilibria %}
+        <p>Игрок 1: {{ eq.row_strategy }}<br>Игрок 2: {{ eq.col_strategy }}
+        {% if eq.payoff_A is defined %}<br>Выигрыш A: {{ "%.4f" % eq.payoff_A }}, B: {{ "%.4f" % eq.payoff_B }}{% endif %}</p>
+        {% if not loop.last %}<hr>{% endif %}
+    {% endfor %}
+    <p>Время: {{ "%.6f" % se_hand_result.time_sec }} сек.</p>
+{% else %}
+    <p class="error">Ошибка: {{ se_hand_result.error }}</p>
+{% endif %}
+
+<h3>Лемке–Хаусон (все метки)</h3>
 {% if lh_all_result.success %}
     <p>Найдено уникальных равновесий: {{ lh_all_result.count }}</p>
     {% for eq in lh_all_result.equilibria %}
-        <p>{{ eq.row_strategy }} / {{ eq.col_strategy }}</p>
+        <p>Игрок 1: {{ eq.row_strategy }}<br>Игрок 2: {{ eq.col_strategy }}
+        {% if eq.payoff_A is defined %}<br>Выигрыш A: {{ "%.4f" % eq.payoff_A }}, B: {{ "%.4f" % eq.payoff_B }}{% endif %}</p>
+        {% if not loop.last %}<hr>{% endif %}
     {% endfor %}
     <p>Время: {{ "%.6f" % lh_all_result.time_sec }} сек.</p>
 {% else %}
     <p class="error">Ошибка: {{ lh_all_result.error }}</p>
 {% endif %}
+{% endif %}
+
+{% if lh_result.game_properties %}
+<hr>
+<h2>Свойства игры</h2>
+<table>
+    <tr><td>Размерность:</td><td>{{ lh_result.game_properties.shape[0] }} × {{ lh_result.game_properties.shape[1] }}</td></tr>
+    <tr><td>Нулевая сумма:</td><td>{{ "Да" if lh_result.game_properties.is_zero_sum else "Нет" }}</td></tr>
+    <tr><td>Симметричная:</td><td>{{ "Да" if lh_result.game_properties.is_symmetric else "Нет" }}</td></tr>
+    <tr><td>Невырожденная:</td><td>{{ "Да" if lh_result.game_properties.is_nondegenerate else "Нет" }}</td></tr>
+</table>
 {% endif %}
 {% endblock %}

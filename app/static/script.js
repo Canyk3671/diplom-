@@ -132,9 +132,8 @@ function submitCompareForm() {
     return true;
 }
 
-// Инициализация при загрузке страницы
+// Инициализация при загрузке
 (function() {
-    // Ждём загрузки DOM
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
             buildMainGrid();
